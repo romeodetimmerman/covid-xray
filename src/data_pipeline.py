@@ -1,12 +1,13 @@
 import os
 from PIL import Image
 import numpy as np
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 RAW_DIR = "../data/raw"
-INTERIM_DIR = "../data/interim"
 PROCESSED_DIR = "../data/processed"
 IMG_HEIGHT = IMG_WIDTH = 299
 TARGET_HEIGHT = TARGET_WIDTH = 128
+BATCH_SIZE = 128
 
 
 def get_image_paths(data_dir):
@@ -125,7 +126,7 @@ def calc_mean_std(train_paths):
     per_image_stds = []
 
     for path in train_paths:
-        img = np.array(Image.open(path).convert("L"))  # convert to grayscale
+        img = np.array(Image.open(path).convert("L"))
         all_pixels.extend(img.flatten())
         per_image_means.append(np.mean(img))
         per_image_stds.append(np.std(img))
@@ -138,34 +139,35 @@ def calc_mean_std(train_paths):
     return mean, std
 
 
-def normalize_image(input_path, output_path, mean, std):
-    """
-    normalize an image
+def load_data(train_dir, val_dir, mean, std):
+    train_gen = ImageDataGenerator(
+        rotation_range=20,
+        width_shift_range=0.15,
+        height_shift_range=0.15,
+        zoom_range=0.2,
+        preprocessing_function=lambda img: (img - mean) / (std),
+    )
 
-    params
-    ------
-    input_path: str
-        path to the input image
-    output_path: str
-        path to save the normalized image
-    mean: float
-        mean of pixel intensities
-    std: float
-        standard deviation of pixel intensities
+    val_gen = ImageDataGenerator(
+        preprocessing_function=lambda img: (img - mean) / (std)
+    )
 
-    returns
-    -------
-    None
-    """
-    # create output directory if it doesn't exist
-    output_dir = os.path.dirname(output_path)
-    os.makedirs(output_dir, exist_ok=True)
+    train_data_gen = train_gen.flow_from_directory(
+        batch_size=BATCH_SIZE,
+        directory=train_dir,
+        shuffle=True,
+        target_size=(IMG_HEIGHT, IMG_WIDTH),
+        class_mode="binary",
+    )
 
-    img = Image.open(input_path).convert("L")
-    pixels = np.array(img.getdata())
-    pixels = (pixels - mean) / std
-    img.putdata(pixels.tolist())
-    img.save(output_path)
+    val_data_gen = val_gen.flow_from_directory(
+        batch_size=BATCH_SIZE,
+        directory=val_dir,
+        shuffle=False,
+        target_size=(IMG_HEIGHT, IMG_WIDTH),
+        class_mode="binary",
+    )
+    return train_data_gen, val_data_gen
 
 
 def main():
@@ -174,30 +176,22 @@ def main():
     print(f"found {len(all_paths)} images")
 
     # downsample images
-    print(f"downsampling {len(all_paths)} images")
-    interim_paths = []
+    print(f"downsampling {len(all_paths)} images to {PROCESSED_DIR}")
+    processed_paths = []
     for path in all_paths:
         input_path = path
-        output_path = path.replace(RAW_DIR, INTERIM_DIR)
+
+        output_path = path.replace(RAW_DIR, PROCESSED_DIR)
         downsample_image(input_path, output_path, TARGET_HEIGHT, TARGET_WIDTH)
-        interim_paths.append(output_path)
+        processed_paths.append(output_path)
 
-    # calculate mean and standard deviation of downsampled train images
-    interim_train_paths = [path for path in interim_paths if "train" in path]
-    print(
-        f"calculating mean and standard deviation of {len(interim_train_paths)} train images"
-    )
-    mean, std = calc_mean_std(interim_train_paths)
-    print(f"mean: {mean}, std: {std}")
+    # calculate mean and std
+    mean, std = calc_mean_std(processed_paths)
 
-    # normalize images
-    print(f"normalizing {len(interim_paths)} images")
-    for path in interim_paths:  # iterate over interim paths
-        input_path = path  # use interim path as input
-        output_path = path.replace(
-            INTERIM_DIR, PROCESSED_DIR
-        )  # create processed path from interim path
-        normalize_image(input_path, output_path, mean, std)
+    # load data
+    train_gen, val_gen = load_data(PROCESSED_DIR, PROCESSED_DIR, mean, std)
+
+    return train_gen, val_gen
 
 
 if __name__ == "__main__":
