@@ -100,24 +100,41 @@ def calculate_pixel_stats(image_paths):
     return stats
 
 
-def visualize_augmentations(sample_img_path, img_height=128, img_width=128):
-    # load image and convert to array
-    original_img = load_img(sample_img_path, target_size=(img_height, img_width))
-    img_array = img_to_array(original_img)
+def visualize_augmentations(img_array, img_height=128, img_width=128):
+    """
+    visualize the augmentations of an image
+
+    params
+    ------
+    img_array: numpy array
+        the image to augment
+    img_height: int
+        the height of the image
+    img_width: int
+        the width of the image
+
+    returns
+    -------
+    None
+    """
+
+    # ensure the image has 3 dimensions (height, width, channels)
+    img_array = np.expand_dims(img_array, axis=-1)
+
+    # add batch dimension (1, height, width, channels)
     img_array = np.expand_dims(img_array, axis=0)
 
     # define individual augmentation generators
     gens = {
-        "rotation": ImageDataGenerator(rotation_range=45, rescale=1.0 / 255),
-        "width_shift": ImageDataGenerator(width_shift_range=0.15, rescale=1.0 / 255),
-        "height_shift": ImageDataGenerator(height_shift_range=0.15, rescale=1.0 / 255),
-        "zoom": ImageDataGenerator(zoom_range=0.5, rescale=1.0 / 255),
+        "rotation": ImageDataGenerator(rotation_range=10),
+        "width_shift": ImageDataGenerator(width_shift_range=0.05),
+        "height_shift": ImageDataGenerator(height_shift_range=0.05),
+        "zoom": ImageDataGenerator(zoom_range=0.1),
         "combined": ImageDataGenerator(
-            rescale=1.0 / 255,
-            rotation_range=45,
+            rotation_range=20,
             width_shift_range=0.15,
             height_shift_range=0.15,
-            zoom_range=0.5,
+            zoom_range=0.2,
         ),
     }
 
@@ -132,13 +149,13 @@ def visualize_augmentations(sample_img_path, img_height=128, img_width=128):
     # plot original + augmented
     plt.figure(figsize=(12, 8))
     plt.subplot(2, 3, 1)
-    plt.imshow(original_img)
+    plt.imshow(img_array[0].squeeze(), cmap="gray")
     plt.title("original")
     plt.axis("off")
 
     for i, (img, title) in enumerate(zip(augmented_imgs, titles)):
         plt.subplot(2, 3, i + 2)
-        plt.imshow(img)
+        plt.imshow(img.squeeze(), cmap="gray")
         plt.title(title)
         plt.axis("off")
 
