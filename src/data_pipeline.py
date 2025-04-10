@@ -24,50 +24,11 @@ def get_image_paths(data_dir):
     all_paths: list
         list of paths to all images
     """
-    # get base dirs
-    train_dir = os.path.join(data_dir, "train")
-    val_dir = os.path.join(data_dir, "val")
-    test_dir = os.path.join(data_dir, "test")
-
-    # get subdirs
-    train_covid_dir = os.path.join(train_dir, "COVID")
-    train_normal_dir = os.path.join(train_dir, "NORMAL")
-
-    val_covid_dir = os.path.join(val_dir, "COVID")
-    val_normal_dir = os.path.join(val_dir, "NORMAL")
-
-    test_covid_dir = os.path.join(test_dir, "COVID")
-    test_normal_dir = os.path.join(test_dir, "NORMAL")
-
-    # get all image paths
-    train_covid_paths = [
-        os.path.join(train_covid_dir, f) for f in os.listdir(train_covid_dir)
-    ]
-    train_normal_paths = [
-        os.path.join(train_normal_dir, f) for f in os.listdir(train_normal_dir)
-    ]
-    val_covid_paths = [
-        os.path.join(val_covid_dir, f) for f in os.listdir(val_covid_dir)
-    ]
-    val_normal_paths = [
-        os.path.join(val_normal_dir, f) for f in os.listdir(val_normal_dir)
-    ]
-    test_covid_paths = [
-        os.path.join(test_covid_dir, f) for f in os.listdir(test_covid_dir)
-    ]
-    test_normal_paths = [
-        os.path.join(test_normal_dir, f) for f in os.listdir(test_normal_dir)
-    ]
-
-    # combine paths
-    all_paths = (
-        train_covid_paths
-        + train_normal_paths
-        + val_covid_paths
-        + val_normal_paths
-        + test_covid_paths
-        + test_normal_paths
-    )  # get all paths
+    all_paths = []
+    for root, dirs, files in os.walk(data_dir):
+        for file in files:
+            if file.lower().endswith((".png")):
+                all_paths.append(os.path.join(root, file))
     return all_paths
 
 
@@ -107,7 +68,7 @@ def downsample_image(input_path, output_path, target_height, target_width):
 
 def calc_mean_std(train_paths):
     """
-    calculate mean and standard deviation of images
+    calculate mean and standard deviation of train images
 
     params
     ------
@@ -139,35 +100,101 @@ def calc_mean_std(train_paths):
     return mean, std
 
 
-def load_data(train_dir, val_dir, mean, std):
+def load_data(train_dir, val_dir, test_dir, mean, std):
+    """
+    create data generators for train, validation, and test sets
+
+    params
+    ------
+    train_dir: str
+        path to training data directory
+    val_dir: str
+        path to validation data directory
+    test_dir: str
+        path to test data directory
+    mean: np.ndarray
+        mean pixel values (rgb) for normalization
+    std: np.ndarray
+        std pixel values (rgb) for normalization
+
+    returns
+    -------
+    train_data_gen: DirectoryIterator
+        generator for training data with augmentation
+    val_data_gen: DirectoryIterator
+        generator for validation data without augmentation
+    test_data_gen: DirectoryIterator
+        generator for test data without augmentation
+    test_data_gen_raw: DirectoryIterator
+        generator for test data without augmentation or normalization (for plotting)
+    """
+
+    # shared preprocessing function
+    def preprocess_norm(img):
+        return (img - mean) / std
+
+    # generator for training data (with augmentation and normalization)
     train_gen = ImageDataGenerator(
         rotation_range=20,
         width_shift_range=0.15,
         height_shift_range=0.15,
         zoom_range=0.2,
-        preprocessing_function=lambda img: (img - mean) / (std),
+        preprocessing_function=preprocess_norm,
     )
 
-    val_gen = ImageDataGenerator(
-        preprocessing_function=lambda img: (img - mean) / (std)
-    )
+    # generator for validation data (only normalization)
+    val_gen = ImageDataGenerator(preprocessing_function=preprocess_norm)
 
+    # generator for test data (only normalization)
+    test_gen = ImageDataGenerator(preprocessing_function=preprocess_norm)
+
+    # generator for raw test data (no normalization or augmentation)
+    test_gen_raw = ImageDataGenerator()
+
+    target_size = (TARGET_HEIGHT, TARGET_WIDTH)
+    color_mode = "rgb"
+
+    print("creating train generator")
     train_data_gen = train_gen.flow_from_directory(
         batch_size=BATCH_SIZE,
         directory=train_dir,
         shuffle=True,
-        target_size=(IMG_HEIGHT, IMG_WIDTH),
+        target_size=target_size,
         class_mode="binary",
+        color_mode=color_mode,
     )
 
+    print("creating validation generator")
     val_data_gen = val_gen.flow_from_directory(
         batch_size=BATCH_SIZE,
         directory=val_dir,
-        shuffle=False,
-        target_size=(IMG_HEIGHT, IMG_WIDTH),
+        shuffle=False,  # no shuffle for validation
+        target_size=target_size,
         class_mode="binary",
+        color_mode=color_mode,
     )
-    return train_data_gen, val_data_gen
+
+    print("creating test generator (normalized)")
+    test_data_gen = test_gen.flow_from_directory(
+        batch_size=BATCH_SIZE,
+        directory=test_dir,
+        shuffle=False,  # no shuffle for test
+        target_size=target_size,
+        class_mode="binary",
+        color_mode=color_mode,
+    )
+
+    print("creating test generator (raw)")
+    test_data_gen_raw = test_gen_raw.flow_from_directory(
+        batch_size=BATCH_SIZE,
+        directory=test_dir,
+        shuffle=False,  # no shuffle for test
+        target_size=target_size,
+        class_mode="binary",
+        color_mode=color_mode,
+    )
+
+    return train_data_gen, val_data_gen, test_data_gen, test_data_gen_raw
 
 
 def main():
@@ -189,9 +216,11 @@ def main():
     mean, std = calc_mean_std(processed_paths)
 
     # load data
-    train_gen, val_gen = load_data(PROCESSED_DIR, PROCESSED_DIR, mean, std)
+    train_gen, val_gen, test_gen, test_gen_raw = load_data(
+        PROCESSED_DIR, PROCESSED_DIR, PROCESSED_DIR, mean, std
+    )
 
-    return train_gen, val_gen
+    return train_gen, val_gen, test_gen, test_gen_raw
 
 
 if __name__ == "__main__":
