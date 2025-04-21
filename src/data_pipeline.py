@@ -6,7 +6,7 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 RAW_DIR = "../data/raw"
 PROCESSED_DIR = "../data/processed"
 IMG_HEIGHT = IMG_WIDTH = 299
-TARGET_HEIGHT = TARGET_WIDTH = 128
+TARGET_HEIGHT = TARGET_WIDTH = 224
 BATCH_SIZE = 128
 
 
