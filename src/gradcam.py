@@ -143,23 +143,3 @@ def display_heatmap(img, heatmap, alpha=0.4):
     plt.imshow(result)
     plt.axis("off")
     plt.show()
-
-
-# setup
-size = (224, 224)
-image_file = "../data/processed/test/COVID/COVID-2003.png"
-
-# load model
-print("loading model")
-model = keras.models.load_model("../models/baseline_model.keras")
-
-
-last_conv_layer_name = "conv2d_35"
-
-# process image and generate heatmap
-print("loading image")
-image_batch, display_batch = load_images([image_file], size)
-heatmap = make_gradcam_heatmap(image_batch.numpy(), model, last_conv_layer_name)
-
-# show results
-display_heatmap(display_batch.numpy(), heatmap, alpha=0.4)
