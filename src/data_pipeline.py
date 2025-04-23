@@ -162,6 +162,7 @@ def load_data(train_dir, val_dir, test_dir, mean, std):
         target_size=target_size,
         class_mode="binary",
         color_mode=color_mode,
+        classes=["NORMAL", "COVID"],
     )
 
     print("creating validation generator")
@@ -172,6 +173,7 @@ def load_data(train_dir, val_dir, test_dir, mean, std):
         target_size=target_size,
         class_mode="binary",
         color_mode=color_mode,
+        classes=["NORMAL", "COVID"],
     )
 
     print("creating test generator (normalized)")
@@ -182,6 +184,7 @@ def load_data(train_dir, val_dir, test_dir, mean, std):
         target_size=target_size,
         class_mode="binary",
         color_mode=color_mode,
+        classes=["NORMAL", "COVID"],
     )
 
     print("creating test generator (raw)")
@@ -192,6 +195,7 @@ def load_data(train_dir, val_dir, test_dir, mean, std):
         target_size=target_size,
         class_mode="binary",
         color_mode=color_mode,
+        classes=["NORMAL", "COVID"],
     )
 
     return train_data_gen, val_data_gen, test_data_gen, test_data_gen_raw
