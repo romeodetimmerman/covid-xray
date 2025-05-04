@@ -1,51 +1,36 @@
-## author
+## authors
 
-Romeo De Timmerman
-
-## project summary
-
-insert project summary
+Annabel De Clerq, Romeo De Timmerman, Zaya Lips, Julie Van Wynsberge
 
 
 ## project structure
 
 ```
-├── LICENSE
 ├── README.md          <- The top-level README for developers using this project.
 ├── data
-│   ├── interim        <- Intermediate data that has been transformed.
 │   ├── processed      <- The final, canonical data sets for modeling.
 │   └── raw            <- The original, immutable data dump.
 │
-├── docs               <- Documents
+├── docs               <- Document folder.
 │
-├── models             <- Trained and serialized models, model predictions, or model summaries
+├── results            <- PDF versions of notebooks and hyperparameter tuning CSV files.
 │
-├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
-│                         the creator's initials, and a short `-` delimited description, e.g.
-│                         `1.0-rdt-initial-data-exploration`.
-│
-├── figures            <- Generated graphics and figures to be used in reporting
+├── models             <- Trained models.
 │
 ├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
 │                         generated with `pip freeze > requirements.txt`
 │
 ├── src                <- Source code for use in this project.
-│   ├── __init__.py    <- Makes src a Python module
+│   ├── __init__.py    <- Makes src a Python module.
 │   │
-│   ├── data           <- Scripts to download or generate data
-│   │   └── make_dataset.py
-│   │
-│   ├── features       <- Scripts to turn raw data into features for modeling
-│   │   └── build_features.py
-│   │
-│   ├── models         <- Scripts to train models and then use trained models to make
-│   │   │                 predictions
-│   │   ├── predict_model.py
-│   │   └── train_model.py
-│   │
-│   └── visualization  <- Scripts to create exploratory and results oriented visualizations
-        └── visualize.py
+│   ├── baseline.ipynb          <- Notebook for baseline model experiments.
+│   ├── data_pipeline.py        <- Script for processing and preparing data.
+│   ├── data_utils.py           <- Utility functions for data handling.
+│   ├── exploration.ipynb       <- Notebook for exploratory data analysis.
+│   ├── gradcam.ipynb           <- Notebook for Grad-CAM visualization experiments.
+│   ├── gradcam.py              <- Script implementing Grad-CAM functionality.
+│   ├── resnet.ipynb            <- Notebook for ResNet model experiments.
+│   └── resnet.py               <- Script implementing the ResNet model.
 
 (this project structure is based on the Cookiecutter Data Science template)
 ```
